@@ -1,25 +1,17 @@
 # Maintainer-only drafts and notes (not part of the public package contract).
 internal/
-docs/project-brief.md
-docs/github-workflow.md
 node_modules/
 coverage/
 .reference/
 .vscode/
-dist/
-build/
-*.tsbuildinfo
 cln-w.md
 .priors/
 
 # ── Public, tracked (the plugin ships these) ────────────────────────────
 #   .claude-plugin/      plugin manifest + marketplace catalog
-#   skills/              one folder per slash command (modern layout)
-#   agents/              the priors-steward subagent
-#   hooks/               lifecycle hooks for Claude Code
-#   .mcp.json            MCP server config
-#   .cursor/rules/       Cursor-side operating rule
-#   .cursor/mcp.json     Cursor MCP server config
+#   skills/worklog/      the worklog skill (SKILL.md)
+#   commands/            the worklog-index slash command
+#   README / LICENSE / SECURITY.md
 #
 # ── Personal / dev-only (gitignored — never part of the plugin) ─────────
 # Personal Claude Code memory and settings (per-maintainer):
@@ -27,7 +19,7 @@ CLAUDE.local.md
 .claude.local.md
 .claude/settings.local.json
 # Personal Claude Code agents and skills — anything you install for working
-# on the Priors plugin itself (e.g. mcp-builder, npm-package, plugin-structure):
+# on this repo itself:
 .claude/agents/
 .claude/skills/
 .agents/

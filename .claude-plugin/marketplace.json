@@ -1,19 +1,19 @@
 {
-  "name": "priors",
+  "name": "worklog",
   "owner": {
     "name": "Claudia Nathan",
     "url": "https://github.com/claudialnathan"
   },
   "plugins": [
     {
-      "name": "priors",
+      "name": "worklog",
       "source": "./",
-      "description": "Always-on project memory for Claude Code. Decisions, dead ends, constraints, and rules survive sessions; agents push back on rejected approaches automatically.",
-      "version": "1.1.0-rc.2",
-      "homepage": "https://github.com/claudialnathan/priors",
-      "repository": "https://github.com/claudialnathan/priors",
+      "description": "Append-only project worklog. Decisions, failures, and corrections live as plain Markdown in .worklog/, committed so every agent inherits the same history and pushes back on already-rejected approaches.",
+      "version": "0.1.0",
+      "homepage": "https://github.com/claudialnathan/worklog",
+      "repository": "https://github.com/claudialnathan/worklog",
       "license": "MIT",
-      "keywords": ["memory", "project-memory", "agents", "claude-code", "cursor", "mcp"]
+      "keywords": ["worklog", "changelog", "project-memory", "agents", "claude-code"]
     }
   ]
 }

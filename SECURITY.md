@@ -1,29 +1,34 @@
 # Security Policy
 
-Priors is a local MCP server and CLI that reads and writes files inside a project's `.priors/` directory. It has no network surface and runs only when invoked.
+worklog is a Claude Code skill — Markdown instructions, no executable code, no server, no
+network surface. It tells the agent to read and append entries in a project's `.worklog/`
+directory and, on graduation, to write rules into `AGENTS.md`, `.claude/rules/`, or a skill.
+There is no daemon, no build step, and nothing runs unless you invoke `/worklog`.
 
 ## Reporting
 
-Report security issues privately through GitHub repository security advisories. Do not open public issues for path traversal, arbitrary file write, or any class of issue that allows escape from the `.priors/` boundary.
+Report concerns privately through GitHub repository security advisories rather than public
+issues.
 
-## Current safety boundaries
+## What it touches
 
-- **Store boundary.** All read and write operations are confined to `<project-root>/.priors/`. Path traversal in entry IDs, staged proposal IDs, transcript paths, and resource URIs is rejected by validation in `src/util/safe-path.ts`.
-- **Resource ID format.** Entry and staged IDs match a narrow safe pattern (`^[a-z0-9-]+$`). Anything else returns an error.
-- **Idempotency.** Every write tool (`stage_learning`, `commit_learning`, `mark_stale`, `link_entries`) accepts a `client_request_id`. Replays return the original result instead of duplicating writes.
-- **Audit trail.** Every write, link, mark-stale, distillation reject, and import is appended to `.priors/audit/actions.log` (JSONL). The audit file is append-only by convention.
-- **No auto-commit.** `stage_learning` and any future hook may only write to `staged/`. The path from `staged/` to `entries/` is `commit_learning`, which requires an explicit user action.
-- **No constraint emission in v1.** `emit_constraint` and `applyEmission` from the legacy v0.3 surface are removed in v1. Generating `.git/hooks/`, `.mcp.json`, or arbitrary executable artifacts from model output is explicitly out of scope.
-- **Generated MCP client configs** pin the local Node executable (`process.execPath`) and the local CLI path. They do not generate `npx -y` configs that fetch remote code at runtime.
-- **Quote-or-refuse verification.** `stage_learning` rejects any candidate whose `evidence.quote` does not appear verbatim in the supplied source content. This is enforced in code, not in prompt instructions.
+- **Writes** `.worklog/WORKLOG.md` and `.worklog/INDEX.md` at the project root, and — only
+  when an entry meets the graduation criteria — appends a rule to `AGENTS.md`,
+  `.claude/rules/<topic>.md`, or a skill in the same repo.
+- **Reads** the current session and those same files to decide what to log.
+- **Commits nothing on its own.** All writes land in your working tree; you review and commit
+  them via git. Graduation writes are surfaced in the run summary so you can revert.
 
-## Out of scope (v1)
+## Out of scope
 
-- Network operations of any kind. The MCP server speaks stdio JSON-RPC only.
-- Multi-user access control. The store is local and assumes a single trust domain.
-- Encryption at rest. The store is plain text by design (it should be readable in any text editor).
-- Sandboxing of the calling agent. Priors does not constrain what the agent does outside the `.priors/` boundary.
+- Network operations of any kind. The skill performs none.
+- Sandboxing the agent. The skill constrains what *it* writes (the files above); it does not
+  constrain what the calling agent does elsewhere.
+- Access control or encryption. `.worklog/` is plain text by design — readable in any editor
+  and committed to the repo so every agent and teammate sees the same history.
 
-## Returning to v0.3
+## Prior incarnation
 
-The legacy v0.3 implementation included `priors.applyEmission` (write allowlisted artifacts under `.githooks/priors/*`, `scripts/priors/*`, `tests/priors/*`, `.config/priors/*`, gated by the `APPLY_PRIORS_EMISSION` environment variable). That surface is preserved at `git checkout legacy/v0.3.0` if you need it. It is not part of the v1 contract.
+This project was previously "Priors," a local MCP server + CLI with a `.priors/` store. That
+implementation (and its larger threat surface) is preserved at git tag
+`legacy/priors-v1.1.0-rc.2` and is not part of the current contract.

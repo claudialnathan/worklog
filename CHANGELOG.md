@@ -1,10 +1,20 @@
 # Changelog
 
-All notable changes to **the Priors repo** (CLI, MCP server, plugin scaffold). Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [SemVer](https://semver.org/).
+All notable changes to this repo. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [SemVer](https://semver.org/).
 
-This file is maintained for repo developers. It is **not** shipped with the npm package or the plugin install (excluded from `package.json` `files[]`). Users see the user-facing "What changed" section in `README.md`; this file tracks the per-PR / per-commit detail.
+This file is maintained for repo developers and tracks the per-PR / per-commit detail.
 
 ## [Unreleased]
+
+### Collapsed to the worklog skill (2026-05-29)
+
+Project renamed **Priors → worklog** and stripped to a single skill. The MCP server, CLI, distillation/scoring/grounding engine, staged review queue, `priors-steward` subagent, the 10 `/priors:*` slash commands, and the lifecycle hooks were all removed — ~14k lines of TS plus ~4.7k lines of tests. The project is now just two Markdown artifacts and a plugin manifest.
+
+- **Why.** The machinery outgrew the idea. Every load-bearing concept (project-as-subject, failures-first-class, dated/sourced claims, pushback on rejected approaches, graduation of hardened entries) is expressible in a disciplined `SKILL.md` over a plain-Markdown `.worklog/`. The simpler surface is the one people will actually try.
+- **What ships now.** `skills/worklog/SKILL.md`, `commands/worklog-index.md`, `.claude-plugin/{plugin,marketplace}.json`, `LICENSE`, `SECURITY.md`, `README.md`.
+- **Store change.** Entries live in `.worklog/WORKLOG.md` (+ `INDEX.md`), not `.priors/`. No daemon, no schema, no IDs. Durable rules graduate to `AGENTS.md` / `.claude/rules/` / a skill; per-machine Claude corrections go to auto memory.
+- **Recovery.** The full pre-collapse system is preserved at git tag `legacy/priors-v1.1.0-rc.2`. Design rationale is retained (maintainer-only) in `internal/project-brief.md`.
+- **Follow-ups (not yet done).** `README.md` still describes the old MCP/CLI system and needs a rewrite. The published npm package `priors` and the GitHub repo name are unchanged here — rename/deprecate those out-of-band.
 
 ### History rewrite (2026-04-28)
 

@@ -1,70 +1,140 @@
 ---
 name: worklog
-description: 'Project worklog — append-only changelog of decisions, failures, gotchas, and corrections in .worklog/ at the project root. Project-shared (committed) so every agent — Claude Code, Cursor, v0, Codex — sees the same history. Personal Claude-Code-only corrections go to auto memory automatically (~/.claude/projects/<project>/memory/) — do not duplicate that surface here. Use when the user runs /worklog or /worklog-index, asks to log/recall project history, or proposes something the worklog flagged as already-failed.'
+description: "Project history for agents and humans — a committed .worklog/ that any agent (Claude Code, Cursor, Codex, v0) reads and writes. BRIEF.md is a ~100-line dated orientation surface (what's decided, ruled out, unresolved); LOG.md is the append-only record behind it. Use when the user runs /worklog, asks to log or recall project history, or proposes something the log already tried and rejected — push back before agreeing."
 ---
 
 # Worklog
 
-Append-only project log. The subject is the project, not the user and not Claude. Each entry is a dated, sourced fact — what happened, why, what file, what a future agent needs to know.
+Project history, committed to the repo, read by whoever shows up next — human or agent. The subject is the project, not the user and not Claude. AGENTS.md tells agents how to behave; `.worklog/` tells them what already happened.
 
-## Files
+Two surfaces, one source of truth:
 
 ```
 .worklog/
-  WORKLOG.md     full log, newest-first.
-  INDEX.md       tag → dates. Peek when a topic comes up.
+  BRIEF.md         the read path. ~100 lines, every line dated. A projection of LOG.md.
+  LOG.md           the evidence. Append-only, newest at the END. Never edited.
+  .gitattributes   "LOG.md merge=union" — parallel agents append without conflicts.
 ```
 
 `.worklog/` lives at the project root (git root if available, else CWD).
 
-`INDEX.md` is auto-maintained — `/worklog` regenerates it after every successful append. The user should never have to remember to run `/worklog-index` to keep it current. `/worklog-index` exists only for periodic gardening (tag merges, retroactive graduation sweeps).
+**LOG is written; BRIEF is derived.** Every `/worklog` run appends to LOG, then regenerates BRIEF from LOG. BRIEF is never hand-authored and never contains a claim that isn't backed by a LOG entry. This split is the whole design: the log can't lie because it's append-only history; the brief can't go stale because it's mechanically rebuilt from that history every time.
 
-## Worklog vs auto memory
+## Why this shape
 
-| Surface              | What it captures                                                              | Scope                              | Loaded how                                      |
-| -------------------- | ----------------------------------------------------------------------------- | ---------------------------------- | ----------------------------------------------- |
-| `.worklog/WORKLOG.md`| Project decisions, failures, corrections, durable gotchas. Cross-agent.       | Committed to repo, all agents      | Read on demand; pushback rule applies           |
-| Auto memory          | Per-session model corrections, build/debug insights Claude noticed itself     | Per-machine, Claude Code only      | First 200 lines of `MEMORY.md` auto-load        |
-| `.claude/rules/*.md` | Path-scoped durable rules (graduated from worklog)                            | Committed, Claude Code             | Loads when matching files are touched           |
-| `AGENTS.md`          | Always-on durable rules (graduated from worklog)                              | Committed, all agents              | Loaded every session                            |
+Personal agent memory (Claude auto memory, Codex/Copilot/Gemini memories) is per-machine and per-tool — it never reaches your teammate or the next agent. Git history records what changed, not what was *rejected*. AGENTS.md is current-state instructions with no history. The gap is a committed, distilled, dated record of how the project got where it is — including the dead ends that never became commits. That's this.
 
-If something Claude learned would only matter to Claude on this machine, it belongs in auto memory — Claude writes it itself, no skill needed. WORKLOG.md is for facts that need to outlast the machine and reach Cursor, v0, and Codex too.
+## The read path (how agents without this skill participate)
 
-## Entry types
-
-| Type         | When to use                                                                                 |
-| ------------ | ------------------------------------------------------------------------------------------- |
-| `decision`   | A choice was made between alternatives. Log the choice, the why, the rejected option.       |
-| `failure`    | An approach was tried and didn't work. Log the symptom, root cause, and what to do instead. |
-| `learning`   | A non-obvious gotcha or system fact that future *agents* (not just Claude) need to know.    |
-| `correction` | The user corrected an approach in a way the project should remember. Log if it's durable.   |
-| `change`     | A non-trivial change shipped that future agents need to know about.                         |
-
-`failure`, `correction`, and `decision` carry the highest future-agent value. `learning` is for cross-agent project facts — Claude-only "I learned X this session" corrections go to auto memory automatically and shouldn't be duplicated here. `change` is for the few shipped items that materially shift how the system works — not every commit.
-
-## Entry format
+The point of plain markdown in the repo is that every AGENTS.md-reading agent can use it with zero install. On bootstrap, offer to add this block to the project's `AGENTS.md` (and append it to `CLAUDE.md` if present):
 
 ```
-#### H:MMam/pm | `type` | one-line headline (specific, file/area named)
+## Project history
+Before non-trivial work, read .worklog/BRIEF.md (≈100 lines, dated).
+When a topic recurs or feels already-decided, grep .worklog/LOG.md.
+After a real decision, failure, or gotcha, append a dated entry to the END of
+LOG.md matching the format of existing entries. Never edit old entries or BRIEF.md.
+```
 
-tags: tag1, tag2, tag3
+A skill-less agent reads BRIEF, greps LOG, and appends to LOG. It won't regenerate BRIEF — that's fine. The next `/worklog` run catches BRIEF up, and BRIEF's header states honestly how far behind it is.
+
+## LOG.md — the evidence layer
+
+Append-only. Newest entry at the **end** of the file (so parallel worktree agents never fight over the same lines; `merge=union` does the rest). Entries are never edited or deleted — to reverse a past decision, write a new one that supersedes it.
+
+### Entry types
+
+Four. Each maps 1:1 to a BRIEF section, which is what makes BRIEF derivable mechanically.
+
+| Type        | When to use                                                                          | BRIEF section        |
+| ----------- | ------------------------------------------------------------------------------------ | -------------------- |
+| `decision`  | A choice between alternatives. Log the choice, the why, the rejected option.         | Recent / Constraints |
+| `failure`   | An approach was tried and didn't work. Log the symptom, root cause, what to do instead. | Don't retry       |
+| `gotcha`    | A non-obvious system fact a future agent needs (env, build, infra trap).             | Constraints / Recent |
+| `question`  | An open question the project hasn't resolved.                                        | Open questions       |
+
+`failure` and `decision` carry the highest future-agent value — they are what git history and AGENTS.md structurally cannot give you. There is no `change` type (git log and the `/changelog` skill own that) and no `correction` type (a correction is a `decision`, a `gotcha`, or a graduation candidate — classify it as one of those).
+
+### Entry format
+
+```
+#### YYYY-MM-DD | `type` | one-line headline (specific, file/area named)
 
 - terse bullet, evidence-first
 - another bullet, no filler
 - if a number matters (test count, file count, time), include it
 
-→ src/path/one.ts, src/path/two.ts
+supersedes: YYYY-MM-DD <headline of the entry this reverses>   ← only when reversing a past entry
+→ src/path/one.ts, src/path/two.ts                              ← touched files, when relevant
 ```
 
 Rules:
 
-- Newest entry at the top of its date section. Date sections go newest-first.
-- Headline names the area or file, not the verb (`sidebar refactor → grouped AppShell`, not `refactored sidebar`).
-- `tags:` line is mandatory. Reuse existing tags from `INDEX.md` before inventing new ones. Target ~15 tags total; merge singletons into parents.
+- **Date is `YYYY-MM-DD` and starts the heading.** No time-of-day. The date is load-bearing: it lets BRIEF show a claim as old without it being a lie.
+- **Append at end of file.** Entries read top-to-bottom oldest-to-newest.
+- **Headline names the area or file, not the verb** (`auth → session cookies, JWT dropped`, not `changed auth`).
+- **`supersedes:` is written at append time, while context is hot.** A decision that reverses an earlier one must name the date + headline it reverses. This is what lets BRIEF drop the old claim mechanically instead of guessing what's still true. If you can't identify the entry being reversed, grep LOG before writing.
 - Bullets only. No paragraphs. Every word adds information.
-- Arrow line lists touched files when relevant.
 - No em dashes. Use periods or commas.
-- Translate emotional/frustrated user wording into a neutral durable claim. Preserve the original phrasing only inside quotes if it adds context.
+- Translate emotional or frustrated user wording into a neutral durable claim. Preserve original phrasing only inside quotes if the phrasing itself is the lesson.
+
+## BRIEF.md — the orientation surface
+
+The highest-frequency interaction in the system and the one to get right. A fresh agent or human reads BRIEF first. If BRIEF is long, vague, or wrong, nothing underneath it gets trusted.
+
+Five hard rules (resurrected from the pre-collapse brief spec; they are why BRIEF stays honest):
+
+1. **Projection, not summary.** Every BRIEF line is a copy or pure shortening of a LOG entry's headline plus its date. You may shorten and reorder; you may **not** synthesize a claim that exists in no LOG entry, infer "the project's direction," or summarize across entries. If you're tempted to interpret, stop — that's the reading agent's job, not BRIEF's.
+2. **Every line is dated.** A dated claim can be old without being a lie. An undated "current state" line cannot.
+3. **Regen is mechanical.** Superseded entries and `promoted` entries drop out of the active sections automatically. No model judgment about "what's still true" — the `supersedes:` links and `promoted` tags already encode it.
+4. **Hard per-section caps, ~100 lines total.** Overflow drops the lowest-priority items and emits one line teaching the grep. Empty sections are omitted entirely.
+5. **Honest header.** State which LOG date the brief was built through, the don't-edit rule, and the merge rule.
+
+### BRIEF layout
+
+```markdown
+# Project brief
+
+Built from .worklog/LOG.md through <date of newest LOG entry>. Log it; don't edit this file.
+On merge conflict: take either side, then regenerate from LOG.
+
+## Recent (last 14 days)
+- YYYY-MM-DD — decision: <short claim, why in one clause>
+- YYYY-MM-DD — gotcha: <short claim>
+
+## Don't retry (dead ends)
+- YYYY-MM-DD — <approach>: <one-line reason it was rejected>
+…N more: grep LOG.md for "| \`failure\` |"
+
+## Constraints in force
+- YYYY-MM-DD — <durable fact still governing the work>
+
+## Open questions
+- YYYY-MM-DD — <unresolved question>
+```
+
+Section sources and caps:
+
+| Section            | Drawn from                                                       | Cap | Overflow                                   |
+| ------------------ | ---------------------------------------------------------------- | --- | ------------------------------------------ |
+| Recent (last 14d)  | any non-superseded entry dated within 14 days, newest first      | 10  | keep 10 newest; drop the rest (they age out anyway) |
+| Don't retry        | `failure` entries, non-superseded, newest first                  | 15  | keep 15 newest + "…N more: grep LOG.md for \"\| \`failure\` \|\"" |
+| Constraints        | `decision`/`gotcha` entries phrased as still-governing facts     | 10  | keep 10 newest + "…N more in LOG.md"       |
+| Open questions     | `question` entries with no later entry answering them            | 5   | keep 5 newest + "…N more"                  |
+
+Skip a section header entirely if it has no entries. Total stays near 100 lines; if it doesn't, you're putting bodies in BRIEF instead of headlines.
+
+## Execution order — `/worklog`
+
+Both modes run this sequence, silently, no prompts:
+
+1. **Scan and select.** Distill mode (bare `/worklog`): scan the recent session, select entries per the significance gate. Directed mode (`/worklog <topic>`): draft one evidence-backed entry on the named topic.
+2. **Append to LOG.md** at end of file, one block per entry, with `supersedes:` lines where a past entry is being reversed.
+3. **Regenerate BRIEF.md** from LOG per the five rules. Update the header's "built through" date.
+4. **Inline graduation pass** (see below) — promote any just-appended entry that already qualifies.
+5. **Show the user**: headlines appended, that BRIEF was regenerated, anything promoted. File paths and headlines, not full bodies.
+
+Bare `/worklog` with zero qualifying candidates is a valid outcome — say so and stop. Don't fabricate signal; the log is append-only and false entries decay it.
 
 ## Significance gate
 
@@ -72,65 +142,68 @@ Before logging, ask: **would a future agent (any agent, not just Claude) make a 
 
 Log when:
 
-- The user explicitly asked.
+- The user explicitly asked (`/worklog <topic>` is always a write).
 - A correction landed that matters cross-agent.
-- A rejected approach surfaced (failure with root cause).
+- An approach was tried and rejected (failure with root cause).
 - A decision was made between real alternatives.
-- A non-obvious gotcha was hit and resolved that all agents need to avoid.
-- A shipped change materially changes how the system works.
+- A non-obvious gotcha was hit and resolved that all agents should avoid.
 
 Skip when:
 
-- Ordinary chat or planning that didn't produce a decision.
+- Ordinary chat or planning that produced no decision.
 - Generic summaries of what was edited.
-- Frustration without a durable claim.
 - Implementation details obvious from reading the code.
 - Every commit, every file edit, every plan step.
-- Vague preferences with no future consequence.
-- Single-session model corrections or preferences — auto memory handles those.
+- Single-session model corrections or preferences — auto memory handles those (below).
 
 Aim for 2–5 entries on a busy day, not 50.
 
+## Worklog vs auto memory
+
+| Surface             | Captures                                                          | Scope                          |
+| ------------------- | ----------------------------------------------------------------- | ------------------------------ |
+| `.worklog/`         | Project decisions, failures, gotchas, open questions. Cross-agent.| Committed, every agent + human |
+| Auto memory         | Per-session, per-machine Claude corrections and build insights    | Machine-local, Claude Code only|
+| `.claude/rules/*.md`| Path-scoped durable rules (graduated from the log)                | Committed, Claude Code         |
+| `AGENTS.md`         | Always-on durable rules (graduated from the log)                  | Committed, all agents          |
+
+If something Claude learned would only matter to Claude on this machine, it belongs in auto memory — Claude writes it itself, no skill needed. `.worklog/` is for facts that outlast the machine and reach Cursor, Codex, and v0 too. Don't duplicate auto memory here.
+
 ## Graduation: the loop must close
 
-Worklog entries are project history, not a permanent rules archive. Entries graduate out of "recent and uncodified" into a durable surface as they harden into project facts.
+Log entries are history, not a permanent rules archive. As an entry hardens into a standing project fact, it graduates to a durable surface.
 
-**Graduation criteria.** An entry is a graduation candidate when any of these hold:
+**Candidate when** any of these hold:
 
-- Stable for 30+ days with no contradiction or refinement.
-- Referenced or relevant in 3+ subsequent entries.
+- Stable 30+ days with no contradiction or refinement.
+- Restated or refined by a later entry (merge both, graduate the result).
 - Phrased as a permanent project fact rather than a recent correction.
-- A new entry refines or restates an existing learning — both old and new are candidates to merge and graduate.
 
-**When graduation is checked.**
-
-- **Inline during `/worklog`** — at the moment of append, while context is hot. If a freshly-appended entry meets criteria, surface it before the run ends. This is the primary path.
-- **Retroactively during `/worklog-index`** — sweep older entries that have since stabilised. This is the gardening path.
+**Graduation runs inline, inside every `/worklog` regen pass** (step 4). There is no separate command to remember. At append time, while context is hot, check each just-written entry; during any regen, a stable older entry that now qualifies graduates too.
 
 **What graduation does.** A graduated entry:
 
-1. Gets rewritten as a positive rule (not a correction) and added to the most appropriate durable surface:
+1. Is rewritten as a positive declarative rule and added to the narrowest surface that reaches every agent that needs it:
    - `AGENTS.md` § Hard nos — universal rules every agent loads every session.
-   - `.claude/rules/<topic>.md` — path-scoped rules (Claude Code only) that load when matching files are touched. Pick the file whose `paths:` frontmatter matches the rule's scope; create a new one if no existing file fits.
-   - A skill — when the rule is a multi-step procedure rather than a fact.
-2. Stays in WORKLOG.md (append-only, never deleted) but receives a `promoted` tag.
+   - `.claude/rules/<topic>.md` — path-scoped rules (Claude Code only) that load when matching files are touched. Pick the file whose `paths:` frontmatter matches; create one if none fits.
+   - A skill — when the rule is a multi-step procedure, not a fact.
+2. Stays in LOG.md (append-only, never deleted) but gets a `promoted` tag on its heading line: `#### YYYY-MM-DD | \`decision\` | headline [promoted]`. Promoted entries drop out of BRIEF's active sections.
 
-Choose the narrowest surface that reaches every agent that needs the rule. If only Claude Code needs it and it's path-scoped, prefer `.claude/rules/`. If Cursor or v0 also need it, it has to live in AGENTS.md.
+Prefer `.claude/rules/` if only Claude Code needs it and it's path-scoped; use `AGENTS.md` if Cursor, Codex, or v0 also need it.
 
-**Phrasing flip.** Graduated rules invert from corrective to declarative:
+**Phrasing flip** — graduated rules invert from corrective to declarative:
 
-| WORKLOG phrasing (correction)                                                                     | Rule phrasing (declarative)                                                                                                                 |
-| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| "Agent built X from scratch instead of using registry block."                                     | "Treat user-named registry blocks and pasted figma output as spec. Install or stop and flag — do not substitute."                           |
-| "shadcn output uses `asChild`, this project is base-ui."                                          | "This project uses base-ui. Translate `asChild` from registry/figma output to `render={<child />}`."                                        |
-| "Agent reached for playwright wrappers for UI verification."                                      | "UI verification stack: `tsc`, `jest`, curl 200, eyeball. Use `mcp__next-devtools__browser_eval` only when explicitly asked."               |
-| "Burned tokens debugging right-aligned CSS via browser_eval; user benchmarked v0 in <500 tokens." | "When a user reports a UI bug and verification says the code is correct, ask for clarification of intent before running more verification." |
+| LOG phrasing (what happened)                                  | Rule phrasing (what to do)                                                        |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| "Agent built X from scratch instead of the registry block."   | "Treat user-named registry blocks as spec. Install or stop and flag — don't substitute." |
+| "shadcn output uses `asChild`; this project is base-ui."      | "This project uses base-ui. Translate `asChild` to `render={<child />}`."          |
+| "Burned tokens debugging CSS the code already had right."     | "When a UI bug report contradicts verification, ask for intent before more verification." |
 
-The point: WORKLOG framing logs that something happened. Rule framing tells future agents what to do. The latter is load-bearing; the former is history.
+LOG framing logs that something happened. Rule framing tells future agents what to do. The latter is load-bearing; promote it. Apply promotions directly — the user reverts via git if one lands wrong. Don't ask the user to rank or pick.
 
 ## Pushback rule
 
-If the user proposes an approach that matches a logged `failure` or contradicts a logged `decision`, push back before agreeing. Format:
+If the user (or another agent's request) proposes an approach that matches a `failure` in the log or contradicts a `decision`, push back before agreeing. BRIEF's **Don't retry** section is the primary trigger — it's in context even for agents reading only the brief; LOG supplies the dated citation.
 
 ```
 This was tried before and rejected.
@@ -143,60 +216,43 @@ Relevant entry:
 I recommend <alternative> instead.
 ```
 
-Saying "you're right" when the worklog says otherwise is a failure mode, not politeness.
+Saying "you're right" when the log says otherwise is a failure mode, not politeness.
 
 ## Voice
 
 - No filler. No rhetorical openers ("Great question…"). No em dashes.
 - Evidence over opinion. State the fact, then cite the file or test count.
 - Neutral language. "Bitbucket repo at 2.9 GB / 4 GB cap; commits rejected beyond." Not "we're in big trouble."
-- Specific over abstract. Name files, versions, line numbers. "138 tests pass after clearing stale `.next/types/`" beats "tests pass."
-- Same tone for human and agent readers. The log is one artefact, not two.
+- Specific over abstract. Name files, versions, numbers. "138 tests pass after clearing stale `.next/types/`" beats "tests pass."
+- Same tone for human and agent readers. The log is one artifact, not two.
+
+## Discipline (both modes)
+
+- **Running `/worklog` is the approval.** Write directly. Don't ask "keep / edit / discard" — that re-gates intent the user already expressed. Show what was written after, so they can revise.
+- **Never ask "which moment to capture"** when bare-invoked. Commit to a reading. The significance gate is the filter; be conservative on borderline cases.
+- **Never spawn a subagent to scan the transcript.** The main thread has the session loaded; passing the transcript into a subagent prompt overflows its window and reads worse. Run inline.
+- **No confirmation prompts** for append, regen, or promotion. The user reverts via git if anything lands wrong.
 
 ## Bootstrap
 
 If `.worklog/` doesn't exist when a worklog command runs:
 
 1. Create `.worklog/`.
-2. Create `WORKLOG.md` with header `## Worklog\n\nAppend-only project log. Newest first.\n\n---\n`.
-3. Create `INDEX.md` with header `## Worklog Index\n\nTag → entry dates. Target ~15 tags total. Auto-regenerated by /worklog.\n\n---\n`.
+2. Create `LOG.md` with header:
+   ```
+   # Worklog
 
-If a legacy `.worklog/LEARNINGS.md` exists, delete it. The skill does not generate or maintain that file — Claude Code's auto memory replaces its purpose.
+   Append-only project history. Oldest first; newest at the end. Never edit past entries.
 
-## Commands
+   ---
+   ```
+3. Create `BRIEF.md` with the honest header and no sections yet (sections appear as entries are logged).
+4. Create `.worklog/.gitattributes` containing `LOG.md merge=union`.
+5. Offer to add the read-path block to `AGENTS.md` (and `CLAUDE.md` if present).
 
-- `/worklog` (no args) — distill mode. Scan recent session, propose candidates inline, append, **auto-regen INDEX.md**, surface inline graduation candidates.
-- `/worklog <topic or claim>` — user-directed write mode. Draft one entry on the named topic, evidence-backed, append directly. Same auto-regen and graduation pass on success.
-- `/worklog-index` — periodic gardening. Full retroactive graduation sweep + tag-merge proposals. Not required for normal use.
+**Legacy migration.** If a pre-rebuild `.worklog/` exists:
 
-### `/worklog` execution order
-
-Every `/worklog` invocation, both modes, runs this sequence:
-
-1. **Scan and select** entries per the significance gate.
-2. **Append** to WORKLOG.md (newest first within today's section).
-3. **Auto-regen INDEX.md** — rebuild tag → dates from WORKLOG.md. No prompts. No tag merges in this pass (those belong to `/worklog-index`).
-4. **Inline graduation pass** — for each just-appended entry, check graduation criteria. If any qualify, **promote directly**: write the rewritten rule to the named target file (`AGENTS.md`, `.claude/rules/<topic>.md`, or relevant skill), add `promoted` tag to the WORKLOG entry. Do not ask the user to confirm, rank, or pick which candidates to promote. The criteria are the filter; the agent's job is to decide and act. The user can revert via git if a promotion landed wrong.
-5. **Show the user** what was appended, what was regenerated, what was promoted (if anything). Brief — file paths and headlines, not full bodies. Surface promotions clearly so the user can review and revert if needed.
-
-All steps run silently and without prompts. `/worklog` never pauses for input.
-
-### `/worklog-index` — periodic gardening
-
-Run when the user invokes it explicitly, or suggest it after a graduation pass surfaces a tag-merge opportunity. Steps:
-
-1. **Retroactive graduation sweep** — re-evaluate older entries against current criteria. Stable, referenced, or now-enforced-upstream entries get **promoted directly** (rewrite as positive rule, write to target file — AGENTS.md / `.claude/rules/` / skill — tag entry as `promoted`). Surface what was promoted in the summary. Do not ask the user to confirm or pick.
-2. **Tag pruning** — any tag with count 1 that doesn't fit a clear future category gets folded into a parent (e.g. `next-15` + `next-16` + `upgrade` → `next`). Apply merges directly. Surface what merged in the summary.
-3. **INDEX regen** with the pruned vocabulary.
-
-### `/worklog` discipline (both modes)
-
-- **Running `/worklog` is the approval.** Write directly. Do not ask "keep / edit / discard" — that re-gates intent the user already expressed by invoking the command. Show what was appended after the write so the user can see and revise if needed.
-- **Never ask the user "which moment to capture" when bare-invoked.** Commit to a reading. The significance gate is the filter; the agent's job is to be conservative on borderline cases.
-- **Never spawn a subagent** (Explore or otherwise) to scan the transcript. The main thread already has the session loaded; passing the transcript into a subagent prompt overflows its window and produces a worse reading from less context. Run inline.
-- **Translate phrasing.** Convert emotional, frustrated, or conversational user wording into a neutral durable claim. Preserve the exact words only if the phrasing itself is the lesson.
-- **Never tell the user "if you /worklog-index later, X."** If a graduation candidate exists, surface it inline now. Deferring graduation to a command the user has to remember defeats the auto-maintenance design.
-- **No confirmation prompts.** Both modes run without asking. Append, regen, promote, surface what happened. The user can revert via git if anything landed wrong. Asking the user to rank or pick between candidates re-gates the very judgment the skill exists to remove. Bootstrap and graduation writes both happen silently — surface the action in the post-run summary, not a pre-run prompt.
-- **Don't recreate auto memory.** If a candidate is a single-session Claude correction that would only matter to Claude on this machine, skip it — auto memory handles it. WORKLOG.md is for cross-agent project history.
-
-Zero candidates is a valid outcome in distill mode. Don't fabricate signal — the file is append-only and false entries decay it. If something landed wrong, the user edits the file directly or logs a correction.
+- `WORKLOG.md` (newest-first, `#### H:MMam/pm | type | headline` entries) → rewrite to `LOG.md`: reverse to oldest-first, convert each heading to `#### YYYY-MM-DD | \`type\` | headline` (drop time-of-day; take the date from the old `### D MMM YYYY` section header), map `learning`/`correction`/`change` types to the nearest of the four (`learning`→`gotcha`, `correction`→`decision` or `gotcha`, `change`→drop unless it's really a decision), strip `tags:` lines.
+- Delete `INDEX.md` (tags and the index are gone — grep replaces them).
+- Delete any `LEARNINGS.md` (auto memory replaced it).
+- Build `BRIEF.md` from the migrated LOG.

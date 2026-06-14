@@ -1,7 +1,7 @@
 {
   "name": "worklog",
-  "version": "0.1.0",
-  "description": "Append-only project worklog. Decisions, failures, and corrections live as plain Markdown in .worklog/, committed to the repo so every agent — Claude Code, Cursor, Codex — inherits the same history and pushes back on already-rejected approaches.",
+  "version": "0.2.0",
+  "description": "Committed project history for agents and humans. A ~100-line dated BRIEF.md (decided, ruled out, unresolved) projected from an append-only LOG.md, in .worklog/. Plain Markdown, so every agent — Claude Code, Cursor, Codex — reads the same history and pushes back on already-rejected approaches.",
   "author": {
     "name": "Claudia Nathan",
     "url": "https://github.com/claudialnathan"

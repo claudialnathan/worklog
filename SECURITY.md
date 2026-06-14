@@ -1,9 +1,11 @@
 # Security Policy
 
-worklog is a Claude Code skill — Markdown instructions, no executable code, no server, no
-network surface. It tells the agent to read and append entries in a project's `.worklog/`
+worklog is a Claude Code skill — Markdown instructions plus one small shell hook, no server,
+no network surface. It tells the agent to read and append entries in a project's `.worklog/`
 directory and, on graduation, to write rules into `AGENTS.md`, `.claude/rules/`, or a skill.
-There is no daemon, no build step, and nothing runs unless you invoke `/worklog`.
+The only executable code is `hooks/inject-brief.sh`, a SessionStart hook that `cat`s
+`.worklog/BRIEF.md` into context when the file exists and does nothing otherwise. There is no
+daemon and no build step.
 
 ## Reporting
 
@@ -12,9 +14,10 @@ issues.
 
 ## What it touches
 
-- **Writes** `.worklog/WORKLOG.md` and `.worklog/INDEX.md` at the project root, and — only
-  when an entry meets the graduation criteria — appends a rule to `AGENTS.md`,
-  `.claude/rules/<topic>.md`, or a skill in the same repo.
+- **Writes** `.worklog/LOG.md`, `.worklog/BRIEF.md`, and `.worklog/.gitattributes` at the
+  project root, and — only when an entry meets the graduation criteria — appends a rule to
+  `AGENTS.md`, `.claude/rules/<topic>.md`, or a skill in the same repo. On bootstrap it may
+  also append a read-path block to `AGENTS.md`/`CLAUDE.md`.
 - **Reads** the current session and those same files to decide what to log.
 - **Commits nothing on its own.** All writes land in your working tree; you review and commit
   them via git. Graduation writes are surfaced in the run summary so you can revert.

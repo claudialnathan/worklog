@@ -6,6 +6,18 @@ This file is maintained for repo developers and tracks the per-PR / per-commit d
 
 ## [Unreleased]
 
+### Inverted to BRIEF + LOG; read path is now the product (2026-06-12)
+
+Rebuilt the skill around two surfaces instead of one. `WORKLOG.md` (append-only, write-optimized) is replaced by `LOG.md` (append-only history, newest at the END) plus `BRIEF.md` (a ~100-line dated orientation surface, regenerated on every run as a deterministic projection of LOG). Still zero code beyond one shell hook; still plain Markdown.
+
+- **Why.** Mid-2026 research: personal agent memory is commoditized (Claude/Codex/Copilot/Gemini all ship per-machine memories); the unowned gap is a *committed, team-shared, distilled* history. The cited failure mode is the read path — agents re-proposing approaches rejected months ago — not the write path. So the brief a fresh agent reads first became the headline artifact; the log is the evidence behind it.
+- **BRIEF can't go stale, LOG can't lie.** BRIEF is never hand-edited — every line is a dated copy/shortening of a LOG headline, superseded and promoted entries drop out mechanically. Rules resurrected from the pre-collapse `internal/spec-brief-resource.md` (projection not summary, every line dated, hard per-section caps).
+- **Cross-agent read path, zero install.** Bootstrap offers a 5-line `AGENTS.md` block so Cursor/Codex/etc. read BRIEF, grep LOG, and append to LOG without the plugin. New `CONVENTION.md` documents the format. New SessionStart hook (`hooks/inject-brief.sh`) loads BRIEF into Claude Code context when present.
+- **Parallel-safe.** LOG appends at end-of-file + `.worklog/.gitattributes` (`LOG.md merge=union`) → worktree agents append concurrently with no conflict. Verified with a two-branch merge test (both entries retained, zero conflict markers).
+- **Cut.** Tags, `INDEX.md`, and the `/worklog-index` command (grep replaces the index; graduation now runs inline on every `/worklog`). Entry types trimmed from five to four (`decision`/`failure`/`gotcha`/`question`); `change` (git/`/changelog` own it) and `correction` (resolves into the others) removed. Newest-first ordering dropped.
+- **Migration.** Bootstrap converts a legacy `.worklog/` (newest-first `WORKLOG.md` + `INDEX.md`) to chronological `LOG.md`, deletes `INDEX.md`/`LEARNINGS.md`, and builds `BRIEF.md`.
+- **Version.** Plugin `0.1.0 → 0.2.0`.
+
 ### Collapsed to the worklog skill (2026-05-29)
 
 Project renamed **Priors → worklog** and stripped to a single skill. The MCP server, CLI, distillation/scoring/grounding engine, staged review queue, `priors-steward` subagent, the 10 `/priors:*` slash commands, and the lifecycle hooks were all removed — ~14k lines of TS plus ~4.7k lines of tests. The project is now just two Markdown artifacts and a plugin manifest.

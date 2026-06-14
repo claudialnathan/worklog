@@ -1,13 +1,19 @@
 # CLAUDE.md
 
-This repo **is** the worklog skill. No code, no MCP server, no CLI — just two Markdown
-artifacts and a plugin manifest. The product is:
+This repo **is** the worklog skill. No code, no MCP server, no CLI — just Markdown
+artifacts, a one-line hook, and a plugin manifest. The product is:
 
 - `skills/worklog/SKILL.md` — the skill body (the actual behaviour)
-- `commands/worklog-index.md` — the periodic-gardening command
+- `CONVENTION.md` — the `.worklog/` format spec, so non-Claude agents can participate
+- `hooks/` — a SessionStart hook that loads `.worklog/BRIEF.md` into context when present
 - `.claude-plugin/` — manifest so it installs as a Claude Code plugin
 
-`.worklog/` is what the skill *writes* in a user's project; this repo doesn't contain one.
+The skill writes two files in a user's project: `.worklog/BRIEF.md` (a ~100-line dated
+orientation surface) and `.worklog/LOG.md` (append-only history). BRIEF is a deterministic
+projection of LOG — written by regenerating, never hand-edited. This repo doesn't contain
+its own `.worklog/`. There is no `INDEX.md` and no `/worklog-index` command anymore — tags
+and the index were cut (grep replaces them) and graduation now runs inline on every
+`/worklog`.
 
 ## Don't re-grow it
 

@@ -73,3 +73,5 @@ The same gap — git captures the diff but not the rejected alternatives, the co
 - **Entire / Checkpoints** pairs each commit with the raw prompts and transcripts that produced it.
 
 All of these are commit-anchored or raw-transcript. `.worklog/` is deliberately neither: it captures distilled knowledge that *never produced a commit* (a rejected approach, a failed spike, an environment gotcha), and it optimizes the **read path** — the cited failure mode is agents re-proposing what was already ruled out, which a 100-line dated brief at session start is meant to prevent.
+
+On a different axis: **"The Log Is the Agent"** (Sehgal, Omnara) argues an agent *is* its append-only event log, with every other surface (UI timeline, traces, compaction) a projection of it. That is the same log-to-projection inversion `.worklog/` runs (LOG.md the durable record, BRIEF.md the projection), pointed at a different subject: his log's subject is the agent runtime (resume, fork, or replay a live agent), ours is the project (orient whoever shows up next). It is noted here to mark that boundary, since `.worklog/` deliberately does not grow toward runtime concerns.

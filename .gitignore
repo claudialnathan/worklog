@@ -1,29 +1,20 @@
-# Maintainer-only drafts and notes (not part of the public package contract).
+# Maintainer notes and per-machine dev tooling. Never shipped.
 internal/
-node_modules/
-coverage/
-.reference/
-.vscode/
-cln-w.md
-.priors/
 
-# ── Public, tracked (the plugin ships these) ────────────────────────────
-#   .claude-plugin/      plugin manifest + marketplace catalog
-#   skills/worklog/      the worklog skill (SKILL.md)
-#   commands/            the worklog-index slash command
-#   README / LICENSE / SECURITY.md
-#
-# ── Personal / dev-only (gitignored — never part of the plugin) ─────────
-# Personal Claude Code memory and settings (per-maintainer):
+# Claude Code (per-maintainer)
+.claude/
 CLAUDE.local.md
 .claude.local.md
-.claude/settings.local.json
-# Personal Claude Code agents and skills — anything you install for working
-# on this repo itself:
-.claude/agents/
-.claude/skills/
 .agents/
 skills-lock.json
-# Personal Cursor rules / extension state, per-machine:
-.cursor/rules.local/
-.cursor/hooks/state/
+
+# Cursor and editor (per-maintainer)
+.cursor/
+.vscode/
+
+# Dependencies, build output, OS cruft, and legacy paths
+.priors/
+.reference/
+node_modules/
+coverage/
+.DS_Store

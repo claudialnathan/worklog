@@ -2,9 +2,10 @@
 
 This repo is the source of the `worklog` skill, not a project that uses it, so there
 is no `.worklog/` here to read. It is deliberately Markdown-only. The behavior lives
-in `skills/worklog/SKILL.md`, the `.worklog/` format other agents follow is in
-`CONVENTION.md`, and `.claude-plugin/` plus `hooks/` make it installable. There is no
-code to build or run.
+in `skills/worklog/SKILL.md` (full pass) and `skills/worklog-minor/SKILL.md` (fast
+append, no regen), the `.worklog/` format other agents follow is in `CONVENTION.md`,
+and `.claude-plugin/` plus `hooks/` make it installable. There is no code to build or
+run.
 
 Mental model: agents append to `.worklog/LOG.md` (append-only history), and the skill
 regenerates `.worklog/BRIEF.md` (a short dated orientation surface) as a projection of

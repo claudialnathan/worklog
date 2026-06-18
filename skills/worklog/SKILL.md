@@ -136,6 +136,8 @@ Both modes run this sequence, silently, no prompts:
 
 Bare `/worklog` with zero qualifying candidates is a valid outcome — say so and stop. Don't fabricate signal; the log is append-only and false entries decay it.
 
+**Fast path.** To jot a single entry without the regen + graduation tail, use the `worklog-minor` skill (`/worklog-minor`). It appends to LOG and stops; the next full `/worklog` projects it into BRIEF and graduates it if it qualifies.
+
 ## Significance gate
 
 Before logging, ask: **would a future agent (any agent, not just Claude) make a better decision because this exists?**
@@ -233,26 +235,8 @@ Saying "you're right" when the log says otherwise is a failure mode, not politen
 - **Never spawn a subagent to scan the transcript.** The main thread has the session loaded; passing the transcript into a subagent prompt overflows its window and reads worse. Run inline.
 - **No confirmation prompts** for append, regen, or promotion. The user reverts via git if anything lands wrong.
 
-## Bootstrap
+## Bootstrap and migration
 
-If `.worklog/` doesn't exist when a worklog command runs:
-
-1. Create `.worklog/`.
-2. Create `LOG.md` with header:
-   ```
-   # Worklog
-
-   Append-only project history. Oldest first; newest at the end. Never edit past entries.
-
-   ---
-   ```
-3. Create `BRIEF.md` with the honest header and no sections yet (sections appear as entries are logged).
-4. Create `.worklog/.gitattributes` containing `LOG.md merge=union`.
-5. Offer to add the read-path block to `AGENTS.md` (and `CLAUDE.md` if present).
-
-**Legacy migration.** If a pre-rebuild `.worklog/` exists:
-
-- `WORKLOG.md` (newest-first, `#### H:MMam/pm | type | headline` entries) → rewrite to `LOG.md`: reverse to oldest-first, convert each heading to `#### YYYY-MM-DD | \`type\` | headline` (drop time-of-day; take the date from the old `### D MMM YYYY` section header), map `learning`/`correction`/`change` types to the nearest of the four (`learning`→`gotcha`, `correction`→`decision` or `gotcha`, `change`→drop unless it's really a decision), strip `tags:` lines.
-- Delete `INDEX.md` (tags and the index are gone — grep replaces them).
-- Delete any `LEARNINGS.md` (auto memory replaced it).
-- Build `BRIEF.md` from the migrated LOG.
+First run in a repo (no `.worklog/` yet), or migrating a pre-rebuild `.worklog/` (a
+`WORKLOG.md`, `INDEX.md`, or `LEARNINGS.md`)? Read `references/setup.md` and follow it
+first. It is one-time setup, kept out of the main body so the common path stays lean.

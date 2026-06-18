@@ -9,7 +9,7 @@
       "name": "worklog",
       "source": "./",
       "description": "Committed project history for agents and humans. A ~100-line dated BRIEF.md projected from an append-only LOG.md, in .worklog/. Plain Markdown, so every agent inherits the same history and pushes back on already-rejected approaches.",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "homepage": "https://github.com/claudialnathan/worklog",
       "repository": "https://github.com/claudialnathan/worklog",
       "license": "MIT",
